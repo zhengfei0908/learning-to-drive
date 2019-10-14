@@ -4,30 +4,30 @@
     },
     "front": true,
     "multi_camera": {
-        "right_left": false,
-        "rear": false
+        "right_left": true,
+        "rear": true
     },
     "data_loader": {
         "historic":{
-            "number": 2,
-            "frequency": 4
+            "number": 4,
+            "frequency": 1
         },
-        "data_dir": "../data/Sample1/",
+        "data_dir": "../data/Sample2/",
         "train":{
-            "csv_name": "train_sample1.csv",
-            "batch_size": 16,
+            "csv_name": "train_sample2.csv",
+            "batch_size": 8,
             "shuffle": true,
             "num_workers": 4
         },
         "validation": {
-            "csv_name": "val_sample1.csv",
-            "batch_size": 16,
+            "csv_name": "val_sample2.csv",
+            "batch_size": 8,
             "shuffle": true,
             "num_workers": 4
         },
         "test": {
-            "csv_name": "test_sample1.csv",
-            "batch_size": 16,
+            "csv_name": "test_sample2.csv",
+            "batch_size": 8,
             "shuffle": false,
             "num_workers": 4
         }
