@@ -12,22 +12,25 @@
             "number": 4,
             "frequency": 1
         },
-        "data_dir": "../data/Sample2/",
+        "data_dir": "..data/Sample2/",
         "train":{
             "csv_name": "train_sample2.csv",
-            "batch_size": 8,
+            "csv_name2":"drive360challenge_train.csv",
+            "batch_size": 16,
             "shuffle": true,
             "num_workers": 4
         },
         "validation": {
             "csv_name": "val_sample2.csv",
-            "batch_size": 8,
+            "csv_name2":"drive360challenge_validation.csv",
+            "batch_size": 16,
             "shuffle": true,
             "num_workers": 4
         },
         "test": {
             "csv_name": "test_sample2.csv",
-            "batch_size": 8,
+            "csv_name2":"drive360challenge_test.csv",
+            "batch_size": 16,
             "shuffle": false,
             "num_workers": 4
         }

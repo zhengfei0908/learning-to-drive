@@ -42,55 +42,55 @@ def train_nn(train_loader, validation_loader, model, optimizer,
         
     
     train_metrics = {
-        'angle_loss': {}
-        # 'speed_loss': {}
+        'angle_loss': {},
+        'speed_loss': {}
     }
     validation_metrics = {
-        'angle_loss': {}
-        # 'speed_loss': {}
+        'angle_loss': {},
+        'speed_loss': {}
     }
     for epoch in range(epochs):
         print('='*10 + 'start ' + str(epoch+1) + ' epoch' + '='*10)
         model.train()
         angle_loss = 0.0
-        # speed_loss = 0.0
+        speed_loss = 0.0
         since = datetime.now()
         cnt = 0
         for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
             optimizer.zero_grad()
             prediction = model(data)
-            loss = criterion(prediction['canSteering'], target['canSteering'].cuda())
-            # loss2 = criterion(prediction['canSpeed'], target['canSpeed'].cuda())
-            # loss = loss1 + loss2
+            loss1 = criterion(prediction['canSteering'], target['canSteering'].cuda())
+            loss2 = criterion(prediction['canSpeed'], target['canSpeed'].cuda())
+            loss = loss1 + loss2
             loss.backward()
             optimizer.step()
             
             # print statistics
-            angle_loss += loss.item()
-            # speed_loss += loss2.item()
+            angle_loss += loss1.item()
+            speed_loss += loss2.item()
             cnt += 1
 #             if batch_idx > 100:
 #                 break
             if (batch_idx+1) % print_freq == 0:
                 if normalize_targets:
                     angle_loss = (angle_loss * target_std['canSteering']**2) / cnt
-                    # speed_loss = (speed_loss * target_std['canSpeed']**2) / cnt
+                    speed_loss = (speed_loss * target_std['canSpeed']**2) / cnt
                 else:
                     angle_loss /= cnt
-                    # speed_loss /= cnt
+                    speed_loss /= cnt
                 train_metrics['angle_loss'].setdefault(str(epoch), []).append(angle_loss)
-                # train_metrics['speed_loss'].setdefault(str(epoch), []).append(speed_loss)
-                print('[epoch: %d, batch: %5d] time: %.2f angle_loss: %.2f' %
-                      (epoch + 1, batch_idx + 1, (datetime.now() - since).total_seconds(), angle_loss))
+                train_metrics['speed_loss'].setdefault(str(epoch), []).append(speed_loss)
+                print('[epoch: %d, batch: %5d] time: %.2f angle_loss: %.2f speed_loss: %.2f' %
+                      (epoch + 1, batch_idx + 1, (datetime.now() - since).total_seconds(), angle_loss, speed_loss))
                 angle_loss = 0.0
-                # speed_loss = 0.0
+                speed_loss = 0.0
                 since = datetime.now()
                 cnt = 0
         print('='*10 + 'saving the model to' + save_path + '='*10)
         torch.save({
             "model_state_dict":model.state_dict(),
             "angle_loss": angle_loss,
-            # "speed_loss": speed_loss,
+            "speed_loss": speed_loss,
             "optimizer_state_dict":optimizer.state_dict(),
             "epoch":epoch
             }, save_path)
@@ -104,13 +104,14 @@ def train_nn(train_loader, validation_loader, model, optimizer,
                         target['canSteering'].cuda()
                     prediction = model(data)
                     mse1 = (np.square(prediction['canSteering'].cpu() - target['canSteering'].cpu())).mean()
-                    # mse2 = (np.square(prediction['canSpeed'].cpu() - target['canSpeed'].cpu())).mean()
+                    mse2 = (np.square(prediction['canSpeed'].cpu() - target['canSpeed'].cpu())).mean()
                     if normalize_targets:
                         mse1 = mse1 * target_std['canSteering'] ** 2
-                        # mse2 = mse2 * target_std['canSpeed'] ** 2
+                        mse2 = mse2 * target_std['canSpeed'] ** 2
                     validation_metrics['angle_loss'].setdefault(str(epoch), []).append(mse1)
-                    # validation_metrics['speed_loss'].setdefault(str(epoch), []).append(mse2)
-            print('angle_loss: %.2f' % (np.mean(validation_metrics['angle_loss'][str(epoch)])))
+                    validation_metrics['speed_loss'].setdefault(str(epoch), []).append(mse2)
+            print('angle_loss: %.2f speed_loss: %.2f' % (np.mean(validation_metrics['angle_loss'][str(epoch)]),
+                                                         np.mean(validation_metrics['speed_loss'][str(epoch)])))
             print('='*10 + 'validation finished' + '='*10)
     return train_metrics, validation_metrics
 
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     print('Loaded train loader with the following data available as a dict.')
     print(train_loader.drive360.dataframe.keys())
     NOW = datetime.now().strftime("%m-%d-%H-%M")
-    MODEL_NAME = 'full_data_angle'
+    MODEL_NAME = 'full_data'
 
     if not os.path.isdir(os.path.join('../output', MODEL_NAME)):
         os.mkdir(os.path.join('../output', MODEL_NAME))
@@ -134,7 +135,7 @@ if __name__ == '__main__':
 
     model = FullDataModel()
     criterion =nn.MSELoss()
-    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=0.0001)
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=0.00005)
 
     result = train_nn(train_loader, validation_loader, model, optimizer, criterion, epochs=5, 
                     validation=True, load_path=LOAD_PATH, save_path=SAVE_PATH, print_freq=200)

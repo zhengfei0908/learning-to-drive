@@ -49,6 +49,7 @@ class Drive360(object):
         self.config = config
         self.data_dir = config['data_loader']['data_dir']
         self.csv_name = config['data_loader'][phase]['csv_name']
+        self.csv_name2 = config['data_loader'][phase]['csv_name2']        
         self.shuffle = config['data_loader'][phase]['shuffle']
         self.history_number = config['data_loader']['historic']['number']
         self.history_frequency = config['data_loader']['historic']['frequency']
@@ -67,7 +68,7 @@ class Drive360(object):
         self.rear = config['multi_camera']['rear']
 
         #### reading in dataframe from csv #####
-        self.dataframe = pd.read_csv(os.path.join(self.data_dir, self.csv_name),
+        temp1 = pd.read_csv(os.path.join(self.data_dir, self.csv_name),
                                      dtype={'cameraFront': object,
                                             'cameraRear': object,
                                             'cameraRight': object,
@@ -75,6 +76,10 @@ class Drive360(object):
                                             'canSpeed': np.float32,
                                             'canSteering': np.float32
                                             })
+        temp1 = temp1[['cameraRight', 'cameraFront', 'cameraRear', 'cameraLeft', 'chapter']]
+        temp2 = pd.read_csv(os.path.join(self.data_dir, self.csv_name2))
+        
+        self.dataframe = temp1.merge(temp2,on = ['cameraRight',"cameraFront","cameraRear","cameraLeft","chapter"])
 
         # Here we calculate the temporal offset for the starting indices of each chapter. As we cannot cross chapter
         # boundaries but would still like to obtain a temporal sequence of images, we cannot start at index 0 of each chapter
@@ -185,6 +190,7 @@ class Drive360(object):
     def __getitem__(self, index):
         inputs = {}
         labels = {}
+        additional = {}
         end = index - self.sequence_length
         skip = int(-1 * self.history_frequency)
         rows = self.dataframe.iloc[index:end:skip].reset_index(drop=True, inplace=False)
@@ -207,6 +213,17 @@ class Drive360(object):
 
         labels['canSteering'] = self.dataframe['canSteering'].iloc[index]
         labels['canSpeed'] = self.dataframe['canSpeed'].iloc[index]
+        features =['here',
+       'tomtom', 'gpsLatitude', 'gpsLongitude', 'gpsAltitude', 'gpsPrecision',
+       'hereMmLatitude', 'hereMmLongitude', 'hereSpeedLimit',
+       'hereSpeedLimit_2', 'hereFreeFlowSpeed', 'hereSignal', 'hereYield',
+       'herePedestrian', 'hereIntersection', 'hereMmIntersection',
+       'hereSegmentExitHeading', 'hereSegmentEntryHeading',
+       'hereSegmentOthersHeading', 'hereCurvature', 'hereCurrentHeading',
+       'here1mHeading', 'here5mHeading', 'here10mHeading', 'here20mHeading',
+       'here50mHeading', 'hereTurnNumber', 'chapter']
+        for i in features:
+            additional[i] = self.dataframe[i].iloc[index]
 
-        return inputs, labels
+        return inputs, labels, additional
 
